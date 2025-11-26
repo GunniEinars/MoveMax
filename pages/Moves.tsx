@@ -115,6 +115,8 @@ export const MovesPage: React.FC = () => {
   const [selectedMappingSource, setSelectedMappingSource] = useState<string | null>(null);
   const [unitToEdit, setUnitToEdit] = useState<StorageUnit | null>(null);
   const [isAddingMarker, setIsAddingMarker] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(false);
   const [labelConfig, setLabelConfig] = useState<{ type: 'crate'|'asset'|'room', start: number, count: number, prefix: string }>({ type: 'crate', start: 100, count: 20, prefix: 'CRT-' });
   const [shareUrl, setShareUrl] = useState('');
 
@@ -136,6 +138,26 @@ export const MovesPage: React.FC = () => {
          };
          updateMove(updatedMove);
          setSelectedMove(updatedMove);
+    }
+  };
+
+  const toggleGroup = (groupName: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupName)) {
+        newSet.delete(groupName);
+      } else {
+        newSet.add(groupName);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllGroups = () => {
+    if (collapsedGroups.size > 0) {
+      setCollapsedGroups(new Set());
+    } else {
+      setCollapsedGroups(new Set(Object.keys(groupedUnits)));
     }
   };
 
@@ -721,42 +743,90 @@ export const MovesPage: React.FC = () => {
                <div className="grid grid-cols-2 gap-6 h-[600px]">
                   {/* Source Column */}
                   <div className="bg-white rounded-xl border shadow-sm p-4 flex flex-col">
-                     <div className="flex items-center justify-between mb-4">
+                     <div className="flex items-center justify-between mb-3">
                         <div><h3 className="font-bold flex items-center"><Box className="w-4 h-4 mr-2 text-brand-500"/> Inventory Source</h3><p className="text-xs text-gray-500 mt-1">Select items to map</p></div>
                         <div className="flex bg-gray-100 p-1 rounded-lg"><button onClick={() => setStrategySourceType('assets')} className={`px-3 py-1 text-xs font-bold rounded ${strategySourceType==='assets' ? 'bg-white shadow text-brand-700' : 'text-gray-500'}`}>Assets</button><button onClick={() => setStrategySourceType('crates')} className={`px-3 py-1 text-xs font-bold rounded ${strategySourceType==='crates' ? 'bg-white shadow text-brand-700' : 'text-gray-500'}`}>Crates</button></div>
                      </div>
-                     <div className="mb-2"><input type="text" placeholder="Filter items..." className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none [color-scheme:light]" value={strategySearch} onChange={e => setStrategySearch(e.target.value)} /></div>
-                     {strategySourceType === 'crates' && (<div className="mb-4 p-2 bg-purple-50 border border-purple-100 rounded text-center"><Button size="xs" variant="secondary" className="w-full" onClick={() => setActiveModal('provision')}><Plus className="w-3 h-3 mr-1"/> Provision New Crates</Button></div>)}
+                     <div className="flex gap-2 mb-2">
+                        <input type="text" placeholder="Filter items..." className="flex-1 text-xs border border-gray-200 rounded px-2 py-1.5 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none [color-scheme:light]" value={strategySearch} onChange={e => setStrategySearch(e.target.value)} />
+                        {strategySourceType === 'assets' && Object.keys(groupedUnits).length > 1 && (
+                           <button onClick={toggleAllGroups} className="px-2 py-1.5 text-[10px] font-bold text-brand-600 hover:bg-brand-50 rounded border border-gray-200 whitespace-nowrap">
+                              {collapsedGroups.size > 0 ? 'Expand All' : 'Collapse All'}
+                           </button>
+                        )}
+                     </div>
+                     {strategySourceType === 'assets' && (
+                        <div className="flex items-center gap-2 mb-2">
+                           <label className="flex items-center text-xs text-gray-600 cursor-pointer hover:text-brand-600">
+                              <input type="checkbox" checked={showOnlyUnmapped} onChange={e => setShowOnlyUnmapped(e.target.checked)} className="mr-1.5 rounded border-gray-300" />
+                              Show only unmapped
+                           </label>
+                        </div>
+                     )}
+                     {strategySourceType === 'crates' && (<div className="mb-2 p-2 bg-purple-50 border border-purple-100 rounded text-center"><Button size="xs" variant="secondary" className="w-full" onClick={() => setActiveModal('provision')}><Plus className="w-3 h-3 mr-1"/> Provision New Crates</Button></div>)}
                      
-                     <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                     <div className="flex-1 overflow-y-auto space-y-2 pr-2">
                         {strategySourceType === 'assets' ? (
                            Object.keys(groupedUnits).length > 0 ? (
-                              Object.entries(groupedUnits).map(([location, units]: [string, StorageUnit[]]) => (
-                                 <div key={location}>
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 sticky top-0 bg-white py-1 flex items-center"><MapPin className="w-3 h-3 mr-1"/> {location}</h4>
-                                    <div className="space-y-2 pl-2 border-l-2 border-gray-100">
-                                       {units.map(unit => (
-                                          <div key={unit.id} onClick={() => setSelectedMappingSource(unit.id)} className={`p-3 border rounded-lg cursor-pointer transition-all ${selectedMappingSource === unit.id ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'hover:bg-gray-50 border-gray-200'} flex justify-between items-center`}>
-                                             <div>
-                                                <p className="font-bold text-sm">
-                                                   {unit.assetTag && <span className="inline-block bg-gray-800 text-white text-[10px] px-1 rounded font-mono mr-1.5">{unit.assetTag}</span>}
-                                                   {unit.name}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{unit.type}</p>
-                                             </div>
-                                             <div className="flex items-center gap-2">
-                                                {unit.estimatedCrates && <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold">{unit.estimatedCrates} crates</span>}
-                                                {unit.mappedTo ? <span className="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> {unit.mappedTo}</span> : <ChevronRightIcon className="w-4 h-4 text-gray-300"/>}
-                                             </div>
+                              Object.entries(groupedUnits).map(([location, units]: [string, StorageUnit[]]) => {
+                                 const filteredUnits = showOnlyUnmapped ? units.filter(u => !u.mappedTo) : units;
+                                 if (filteredUnits.length === 0) return null;
+
+                                 const isCollapsed = collapsedGroups.has(location);
+                                 const mappedCount = units.filter(u => u.mappedTo).length;
+
+                                 return (
+                                    <div key={location} className="border border-gray-200 rounded-lg overflow-hidden">
+                                       <button
+                                          onClick={() => toggleGroup(location)}
+                                          className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between text-left"
+                                       >
+                                          <div className="flex items-center gap-2">
+                                             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                                             <MapPin className="w-3 h-3 text-brand-500" />
+                                             <span className="text-xs font-bold text-gray-700 uppercase">{location}</span>
                                           </div>
-                                       ))}
+                                          <div className="flex items-center gap-2">
+                                             <span className="text-[10px] bg-white px-2 py-0.5 rounded-full font-bold text-gray-600">{filteredUnits.length} items</span>
+                                             {mappedCount > 0 && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">{mappedCount} mapped</span>}
+                                          </div>
+                                       </button>
+                                       {!isCollapsed && (
+                                          <div className="p-2 space-y-1.5 bg-white">
+                                             {filteredUnits.map(unit => (
+                                                <div key={unit.id} onClick={() => setSelectedMappingSource(unit.id)} className={`p-2 border rounded cursor-pointer transition-all ${selectedMappingSource === unit.id ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'hover:bg-gray-50 border-gray-200'} flex justify-between items-center`}>
+                                                   <div className="min-w-0">
+                                                      <p className="font-bold text-xs truncate">
+                                                         {unit.assetTag && <span className="inline-block bg-gray-800 text-white text-[9px] px-1 rounded font-mono mr-1">{unit.assetTag}</span>}
+                                                         {unit.name}
+                                                      </p>
+                                                      <p className="text-[10px] text-gray-500">{unit.type}</p>
+                                                   </div>
+                                                   <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                                                      {unit.estimatedCrates && <span className="text-[9px] bg-purple-100 text-purple-800 px-1 py-0.5 rounded font-bold">{unit.estimatedCrates}</span>}
+                                                      {unit.mappedTo ? <CheckCircle2 className="w-3 h-3 text-green-600" /> : <ChevronRightIcon className="w-3 h-3 text-gray-300"/>}
+                                                   </div>
+                                                </div>
+                                             ))}
+                                          </div>
+                                       )}
                                     </div>
-                                 </div>
-                              ))
+                                 );
+                              })
                            ) : <p className="text-center text-gray-400 text-sm py-10">No matching assets.</p>
                         ) : (
-                           (selectedMove.crates || []).length > 0 ? 
-                           (selectedMove.crates || []).filter(c => c.name.toLowerCase().includes(strategySearch.toLowerCase())).map(crate => (<div key={crate.id} onClick={() => setSelectedMappingSource(crate.id)} className={`p-3 border rounded-lg cursor-pointer transition-all ${selectedMappingSource === crate.id ? 'bg-purple-50 border-purple-500 ring-1 ring-purple-500' : 'hover:bg-gray-50 border-gray-200'} flex justify-between items-center`}><div><p className="font-bold text-sm">{crate.name}</p><p className="text-xs text-gray-500 font-mono">{crate.barcode}</p></div>{crate.destinationZoneId ? <span className="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> Mapped</span> : <ChevronRightIcon className="w-4 h-4 text-gray-300"/>}</div>))
+                           (selectedMove.crates || []).length > 0 ?
+                           (selectedMove.crates || []).filter(c => c.name.toLowerCase().includes(strategySearch.toLowerCase())).map(crate => (
+                              <div key={crate.id} onClick={() => setSelectedMappingSource(crate.id)} className={`p-2 border rounded cursor-pointer transition-all ${selectedMappingSource === crate.id ? 'bg-purple-50 border-purple-500 ring-1 ring-purple-500' : 'hover:bg-gray-50 border-gray-200'} flex justify-between items-center`}>
+                                 <div className="min-w-0">
+                                    <p className="font-bold text-xs truncate">{crate.name}</p>
+                                    <p className="text-[10px] text-gray-500 font-mono">{crate.barcode}</p>
+                                 </div>
+                                 <div className="flex-shrink-0 ml-2">
+                                    {crate.destinationZoneId ? <CheckCircle2 className="w-3 h-3 text-green-600" /> : <ChevronRightIcon className="w-3 h-3 text-gray-300"/>}
+                                 </div>
+                              </div>
+                           ))
                            : <p className="text-center text-gray-400 text-sm py-10">No crates provisioned.</p>
                         )}
                      </div>
