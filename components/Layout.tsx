@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Users, Truck, Map, BarChart, Settings, 
-  Menu, X, Bell, Briefcase, LogOut, ChevronDown, CheckSquare, Search, Box, ChevronRight, FileText, Package, Scan
+import {
+  Users, Truck, Map, BarChart, Settings,
+  Menu, X, Bell, Briefcase, LogOut, ChevronDown, CheckSquare, Search, Box, ChevronRight, FileText, Package, Scan, Warehouse, UserCog
 } from 'lucide-react';
 import { NavItem, PagePermissions } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -11,11 +11,13 @@ import { useStore } from '../context/StoreContext';
 
 // Map NavItems to permission keys
 const NAV_CONFIG: { item: NavItem; permissionKey: keyof PagePermissions }[] = [
-  { item: { id: 'reports', label: 'Dashboard', path: '/reports', icon: BarChart }, permissionKey: 'projects' }, 
+  { item: { id: 'reports', label: 'Dashboard', path: '/reports', icon: BarChart }, permissionKey: 'projects' },
   { item: { id: 'moves', label: 'Projects', path: '/moves', icon: Briefcase }, permissionKey: 'projects' },
   { item: { id: 'audit', label: 'Auditor', path: '/audit', icon: Scan }, permissionKey: 'projects' }, // New Audit Link
+  { item: { id: 'warehouse', label: 'Warehouse', path: '/warehouse', icon: Warehouse }, permissionKey: 'projects' },
   { item: { id: 'mytasks', label: 'My Tasks', path: '/my-tasks', icon: CheckSquare }, permissionKey: 'projects' },
   { item: { id: 'profiles', label: 'Profiles', path: '/profiles', icon: Users }, permissionKey: 'profiles' },
+  { item: { id: 'staff', label: 'Staff', path: '/staff', icon: UserCog }, permissionKey: 'profiles' },
   { item: { id: 'dispatch', label: 'Dispatch', path: '/dispatch', icon: Map }, permissionKey: 'dispatch' },
   { item: { id: 'settings', label: 'Settings', path: '/settings', icon: Settings }, permissionKey: 'settings' },
 ];

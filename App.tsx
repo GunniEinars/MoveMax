@@ -10,6 +10,8 @@ import { SettingsPage } from './pages/Settings';
 import { MobileTasksPage } from './pages/MobileTasks';
 import { ClientPortalPage } from './pages/ClientPortal';
 import { AuditorPage } from './pages/Auditor';
+import { WarehousePage } from './pages/Warehouse';
+import { StaffPage } from './pages/Staff';
 import { LoginPage } from './pages/Login';
 import { ToastProvider } from './components/Toast';
 import { StoreProvider } from './context/StoreContext';
@@ -37,6 +39,8 @@ const App: React.FC = () => {
                     <Route path="/profiles" element={<ProfilesPage />} />
                     <Route path="/moves" element={<MovesPage />} />
                     <Route path="/dispatch" element={<DispatchPage />} />
+                    <Route path="/warehouse" element={<WarehousePage />} />
+                    <Route path="/staff" element={<StaffPage />} />
                     <Route path="/reports" element={<DashboardPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/my-tasks" element={<MobileTasksPage />} />
