@@ -914,6 +914,105 @@ export const MovesPage: React.FC = () => {
       )}
 
       {/* ... (All other tabs preserved exactly as they were) */}
+      {activeTab === 'disposition' && (
+         <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white p-5 rounded-xl border shadow-sm">
+                     <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-bold text-gray-500 uppercase">Keep</p>
+                        <Box className="w-4 h-4 text-blue-500" />
+                     </div>
+                     <p className="text-2xl font-bold text-blue-600">{dispositionMetrics.keepVol.toFixed(1)} cu ft</p>
+                     <p className="text-xs text-gray-500 mt-1">{((dispositionMetrics.keepVol / dispositionMetrics.total) * 100).toFixed(1)}% of total</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-xl border shadow-sm">
+                     <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-bold text-gray-500 uppercase">Digitize</p>
+                        <FileText className="w-4 h-4 text-purple-500" />
+                     </div>
+                     <p className="text-2xl font-bold text-purple-600">{dispositionMetrics.digitizeVol.toFixed(1)} cu ft</p>
+                     <p className="text-xs text-gray-500 mt-1">{((dispositionMetrics.digitizeVol / dispositionMetrics.total) * 100).toFixed(1)}% of total</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-xl border shadow-sm">
+                     <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-bold text-gray-500 uppercase">Recycle/Donate</p>
+                        <Recycle className="w-4 h-4 text-green-500" />
+                     </div>
+                     <p className="text-2xl font-bold text-green-600">{dispositionMetrics.recycleVol.toFixed(1)} cu ft</p>
+                     <p className="text-xs text-gray-500 mt-1">{((dispositionMetrics.recycleVol / dispositionMetrics.total) * 100).toFixed(1)}% of total</p>
+                  </div>
+               </div>
+               <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col items-center justify-center">
+                  <h4 className="text-sm font-bold text-gray-500 mb-2">Disposition Breakdown</h4>
+                  <div className="w-full h-40">
+                     <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                           <Pie
+                              data={[
+                                 { name: 'Keep', value: dispositionMetrics.keepVol, fill: '#3b82f6' },
+                                 { name: 'Digitize', value: dispositionMetrics.digitizeVol, fill: '#a855f7' },
+                                 { name: 'Recycle/Donate', value: dispositionMetrics.recycleVol, fill: '#22c55e' }
+                              ]}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={40}
+                              outerRadius={60}
+                              paddingAngle={5}
+                              dataKey="value"
+                           >
+                              <Cell fill="#3b82f6" />
+                              <Cell fill="#a855f7" />
+                              <Cell fill="#22c55e" />
+                           </Pie>
+                           <RechartsTooltip />
+                           <Legend verticalAlign="bottom" height={36}/>
+                        </PieChart>
+                     </ResponsiveContainer>
+                  </div>
+               </div>
+            </div>
+            <div className="bg-white rounded-xl border shadow-sm">
+               <div className="p-4 border-b">
+                  <h3 className="font-bold text-lg">Items by Disposition</h3>
+                  <p className="text-sm text-gray-500">{selectedMove.inventory.length} total items</p>
+               </div>
+               <div className="p-4">
+                  <table className="w-full text-sm">
+                     <thead className="bg-gray-50">
+                        <tr>
+                           <th className="p-3 text-left font-bold">Item</th>
+                           <th className="p-3 text-left font-bold">Room</th>
+                           <th className="p-3 text-center font-bold">Quantity</th>
+                           <th className="p-3 text-center font-bold">Volume</th>
+                           <th className="p-3 text-left font-bold">Disposition</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {selectedMove.inventory.map(item => (
+                           <tr key={item.id} className="border-b hover:bg-gray-50">
+                              <td className="p-3 font-medium">{item.name}</td>
+                              <td className="p-3 text-gray-600">{item.room}</td>
+                              <td className="p-3 text-center">{item.quantity}</td>
+                              <td className="p-3 text-center font-mono">{(item.volume * item.quantity).toFixed(1)} cu ft</td>
+                              <td className="p-3">
+                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold
+                                    ${item.disposition === 'Keep' ? 'bg-blue-100 text-blue-800' :
+                                      item.disposition === 'Digitize' ? 'bg-purple-100 text-purple-800' :
+                                      ['Recycle', 'Donate', 'Trash'].includes(item.disposition || '') ? 'bg-green-100 text-green-800' :
+                                      'bg-gray-100 text-gray-800'}`}>
+                                    {item.disposition || 'Unassigned'}
+                                 </span>
+                              </td>
+                           </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+      )}
+
       {activeTab === 'budget' && (
          <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
