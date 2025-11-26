@@ -1,0 +1,5 @@
+{
+  "name": "MoveMax Admin",
+  "description": "A production-grade Move Management System admin interface with staff management, move tracking, and AI-powered insights.",
+  "requestFramePermissions": []
+}
