@@ -111,6 +111,7 @@ export const MovesPage: React.FC = () => {
   }, [detectedUnits, strategySearch]);
 
   const [selectedUnitForMap, setSelectedUnitForMap] = useState<string | null>(null);
+  const [selectedZoneForMap, setSelectedZoneForMap] = useState<string | null>(null);
   const [selectedMappingSource, setSelectedMappingSource] = useState<string | null>(null);
   const [unitToEdit, setUnitToEdit] = useState<StorageUnit | null>(null);
   const [isAddingMarker, setIsAddingMarker] = useState(false);
@@ -120,6 +121,7 @@ export const MovesPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const destMapInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const destMapContainerRef = useRef<HTMLDivElement>(null);
 
   // -- Helpers --
   const updateUnits = (units: StorageUnit[]) => {
@@ -184,6 +186,24 @@ export const MovesPage: React.FC = () => {
      if (selectedUnitForMap) {
          updateUnits(detectedUnits.map(u => u.id === selectedUnitForMap ? { ...u, coordinates: { x, y } } : u));
          setSelectedUnitForMap(null); showToast('Location updated', 'info');
+     }
+  };
+
+  const handleDestMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
+     if (!destMapContainerRef.current || !selectedMove) return;
+     const rect = destMapContainerRef.current.getBoundingClientRect();
+     const x = ((e.clientX - rect.left) / rect.width) * 100;
+     const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+     if (selectedZoneForMap) {
+         const updatedZones = (selectedMove.destinationZones || []).map(z =>
+            z.id === selectedZoneForMap ? { ...z, coordinates: { x, y } } : z
+         );
+         const updatedMove = { ...selectedMove, destinationZones: updatedZones };
+         updateMove(updatedMove);
+         setSelectedMove(updatedMove);
+         setSelectedZoneForMap(null);
+         showToast('Zone repositioned', 'success');
      }
   };
 
@@ -269,10 +289,38 @@ export const MovesPage: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend=async()=>{
           const zones = await analyzeDestinationMap((reader.result as string).split(',')[1]);
+
+          // Distribute zones in a grid layout for better visual organization
+          const existingCount = (selectedMove.destinationZones || []).length;
+          const totalZones = existingCount + zones.length;
+          const cols = Math.ceil(Math.sqrt(totalZones));
+          const padding = 15; // 15% padding from edges
+          const usableWidth = 100 - (padding * 2);
+          const usableHeight = 100 - (padding * 2);
+
+          const zonesWithCoords = zones.map((z, idx) => {
+            const position = existingCount + idx;
+            const row = Math.floor(position / cols);
+            const col = position % cols;
+            const rows = Math.ceil(totalZones / cols);
+
+            // Calculate position with even distribution
+            const x = padding + (col * (usableWidth / (cols - 1 || 1)));
+            const y = padding + (row * (usableHeight / (rows - 1 || 1)));
+
+            return {
+              ...z,
+              coordinates: {
+                x: Math.min(100 - padding, Math.max(padding, x)),
+                y: Math.min(100 - padding, Math.max(padding, y))
+              }
+            };
+          });
+
           const updatedMove: Move = {
               ...selectedMove,
               destinationPlan: { floorplanImage: reader.result as string },
-              destinationZones: [...(selectedMove.destinationZones || []), ...zones.map(z=>({...z, coordinates:{x:Math.random()*80+10,y:Math.random()*80+10}}))]
+              destinationZones: [...(selectedMove.destinationZones || []), ...zonesWithCoords]
           };
           updateMove(updatedMove); setSelectedMove(updatedMove); setAnalyzingImage(false); setDestinationView('map');
       };
@@ -743,23 +791,40 @@ export const MovesPage: React.FC = () => {
                            <Button size="sm" variant="secondary" className="w-full mt-4 border-dashed" onClick={() => setActiveModal('zone')}><Plus className="w-4 h-4 mr-2"/> Add New Zone</Button>
                         </div>
                      ) : (
-                        <div className="flex-1 relative bg-gray-100 rounded-lg border border-gray-300 overflow-hidden">
+                        <div
+                           ref={destMapContainerRef}
+                           className={`flex-1 min-h-0 relative bg-gray-100 rounded-lg border border-gray-300 overflow-hidden ${selectedZoneForMap ? 'cursor-crosshair' : ''}`}
+                           onClick={handleDestMapClick}
+                        >
                            {selectedMove.destinationPlan?.floorplanImage ? (
                               <>
-                                 <img src={selectedMove.destinationPlan.floorplanImage} className="absolute inset-0 w-full h-full object-contain opacity-70" />
+                                 <img src={selectedMove.destinationPlan.floorplanImage} className="absolute inset-0 w-full h-full object-cover opacity-70" />
                                  {selectedMove.destinationZones?.map((zone) => (
-                                    <div 
-                                       key={zone.id} 
-                                       className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer hover:scale-110 transition-transform z-10`} 
-                                       style={{ left: `${zone.coordinates?.x || 50}%`, top: `${zone.coordinates?.y || 50}%` }} 
-                                       onClick={() => selectedMappingSource ? handleMapCrateToZone(zone.name) : null}
+                                    <div
+                                       key={zone.id}
+                                       className={`absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer hover:scale-110 transition-all z-10 ${selectedZoneForMap === zone.id ? 'scale-125 z-20' : ''}`}
+                                       style={{ left: `${zone.coordinates?.x || 50}%`, top: `${zone.coordinates?.y || 50}%` }}
+                                       onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (selectedMappingSource) {
+                                             handleMapCrateToZone(zone.name);
+                                          } else {
+                                             setSelectedZoneForMap(zone.id === selectedZoneForMap ? null : zone.id);
+                                          }
+                                       }}
                                     >
-                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md border-2 border-white ${selectedMappingSource ? 'bg-green-500 animate-pulse' : 'bg-brand-600'}`}>
+                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md border-2 border-white ${selectedMappingSource ? 'bg-green-500 animate-pulse' : selectedZoneForMap === zone.id ? 'bg-orange-500 ring-4 ring-orange-300' : 'bg-brand-600'}`}>
                                           <MapPin className="w-4 h-4" />
                                        </div>
                                        <div className="mt-1 px-2 py-1 bg-black/75 text-white text-[10px] rounded whitespace-nowrap">{zone.name}</div>
                                     </div>
                                  ))}
+                                 {selectedZoneForMap && (
+                                    <div className="absolute top-2 left-2 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg flex items-center">
+                                       <MapPin className="w-3 h-3 mr-1.5" />
+                                       Click anywhere to reposition zone
+                                    </div>
+                                 )}
                               </>
                            ) : (
                               <div className="flex flex-col items-center justify-center h-full text-gray-400">
