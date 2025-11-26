@@ -793,12 +793,12 @@ export const MovesPage: React.FC = () => {
                      ) : (
                         <div
                            ref={destMapContainerRef}
-                           className={`flex-1 min-h-0 relative bg-gray-100 rounded-lg border border-gray-300 overflow-hidden ${selectedZoneForMap ? 'cursor-crosshair' : ''}`}
+                           className={`w-full h-[500px] relative bg-gray-100 rounded-lg border border-gray-300 overflow-hidden ${selectedZoneForMap ? 'cursor-crosshair' : ''}`}
                            onClick={handleDestMapClick}
                         >
                            {selectedMove.destinationPlan?.floorplanImage ? (
                               <>
-                                 <img src={selectedMove.destinationPlan.floorplanImage} className="absolute inset-0 w-full h-full object-cover opacity-70" />
+                                 <img src={selectedMove.destinationPlan.floorplanImage} className="absolute inset-0 w-full h-full object-contain opacity-70" />
                                  {selectedMove.destinationZones?.map((zone) => (
                                     <div
                                        key={zone.id}
